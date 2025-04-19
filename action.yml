@@ -1,0 +1,48 @@
+name: 'SimpleCov Checker'
+description: 'Check SimpleCov code coverage and report results in GitHub workflow'
+author: 'Alex Remniov'
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  minimum_suite_coverage:
+    description: 'Minimum required total coverage percentage (0-100)'
+    required: false
+    default: '90'
+  minimum_file_coverage:
+    description: 'Minimum required coverage percentage per file (0-100)'
+    required: false
+    default: '0'
+  coverage_path:
+    description: 'Path to the SimpleCov .resultset.json file'
+    required: false
+    default: 'coverage/.resultset.json'
+  debug_mode:
+    description: 'Enable debug mode for additional output (true|false)'
+    required: false
+    default: 'false'
+  on_fail_status:
+    description: 'Behavior when coverage fails (fail|warn)'
+    required: false
+    default: 'fail'
+  post_comment:
+    description: 'Post results as a PR comment (true|false)'
+    required: false
+    default: 'false'
+  github_token:
+    description: 'GitHub token (required if post_comment is true)'
+    required: false
+    default: ''
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    MINIMUM_SUITE_COVERAGE: ${{ inputs.minimum_suite_coverage }}
+    MINIMUM_FILE_COVERAGE: ${{ inputs.minimum_file_coverage }}
+    COVERAGE_PATH: ${{ inputs.coverage_path }}
+    DEBUG_MODE: ${{ inputs.debug_mode }}
+    ON_FAIL_STATUS: ${{ inputs.on_fail_status }}
+    POST_COMMENT: ${{ inputs.post_comment }}
+    GITHUB_TOKEN: ${{ inputs.github_token }}

@@ -1,0 +1,41 @@
+name: Test Action
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Create a test SimpleCov file
+      - name: Create test SimpleCov file
+        run: |
+          mkdir -p coverage
+          cat > coverage/.resultset.json << 'EOL'
+          {
+            "RSpec": {
+              "coverage": {
+                "/app/models/user.rb": {
+                  "lines": [1, 1, null, 1, 1, null, 1, 0, null, null, 1, 1, null, null, 1, 0, null, null]
+                },
+                "/app/models/post.rb": {
+                  "lines": [1, 1, 1, 1, null, 1, 0, null, null]
+                }
+              }
+            }
+          }
+          EOL
+
+      # Test the action with itself
+      - name: Test action with itself
+        uses: ./
+        with:
+          minimum_suite_coverage: 80
+          minimum_file_coverage: 70
+          debug_mode: true
