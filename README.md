@@ -1,5 +1,3 @@
-# SimpleCov GitHub Action
-
 [![GitHub release](https://img.shields.io/github/v/release/alexremn/simplecov-github-action.svg)](https://github.com/alexremn/simplecov-github-action/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -43,6 +41,7 @@ Add this to your GitHub Actions workflow:
 | `debug_mode` | Enable debug mode for additional output | No | `false`                    | Boolean |
 | `on_fail_status` | Behavior when coverage check fails | No | `fail`                     | `fail` or `warn` |
 | `post_comment` | Post results as a comment on the PR | No | `false`                    | Boolean |
+| `update_comment` | Update existing comment instead of creating a new one | No | `false`                    | Boolean |
 | `github_token` | GitHub token for PR comment creation | No | `''`                       | Required if post_comment is true |
 
 ## Behavior Options
@@ -52,12 +51,55 @@ Add this to your GitHub Actions workflow:
 - **`fail`** (default): Exits with a non-zero status code when coverage requirements aren't met, causing the workflow run to fail
 - **`warn`**: Only outputs warnings when coverage requirements aren't met, allowing the workflow run to continue
 
-### PR Comments (`post_comment`)
+### PR Comments (`post_comment` and `update_comment`)
 
-- **`true`**: Posts the coverage results as a comment on the Pull Request
-- **`false`** (default): Does not post comments
+- **`post_comment: true`**: Posts the coverage results as a comment on the Pull Request
+- **`post_comment: false`** (default): Does not post comments
+- **`update_comment: true`**: Updates existing coverage comment instead of creating a new one
+- **`update_comment: false`** (default): Creates a new comment on each run
 
 Note: When `post_comment` is set to `true`, the `github_token` input is required. You can provide it with `${{ secrets.GITHUB_TOKEN }}`.
+
+## GitHub Token Permissions
+
+If you're using the `post_comment` feature to comment on pull requests, you need to ensure that your `GITHUB_TOKEN` has the necessary permissions:
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write  # Required for posting/updating PR comments
+```
+
+Add this to your workflow file to grant the required permissions:
+
+```yaml
+name: Ruby Tests with Coverage
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write  # Required for PR comments
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ... your test steps here ...
+      
+      - name: Check SimpleCov coverage
+        uses: alexremn/simplecov-github-action@v1
+        with:
+          minimum_suite_coverage: 95
+          post_comment: true
+          update_comment: true  # Update existing comment instead of creating a new one
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Without the `pull-requests: write` permission, the action will not be able to post or update comments on pull requests.# SimpleCov GitHub Action
 
 ## Examples
 

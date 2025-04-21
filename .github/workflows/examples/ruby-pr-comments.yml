@@ -1,0 +1,48 @@
+name: Ruby Tests with Coverage and PR Comments
+
+on:
+  pull_request:
+    branches: [ main ]
+
+# Required permissions for PR comments
+permissions:
+  contents: read
+  pull-requests: write  # Needed for PR comments
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Run tests with coverage
+        run: bundle exec rspec
+
+      - name: Check SimpleCov coverage
+        uses: alexremn/simplecov-github-action@v1
+        with:
+          minimum_suite_coverage: 95
+          minimum_file_coverage: 90
+          on_fail_status: warn
+          post_comment: true        # Post results as a PR comment
+          update_comment: true      # Update existing comment instead of creating a new one
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: Upload coverage report as an artifact
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          retention-days: 7

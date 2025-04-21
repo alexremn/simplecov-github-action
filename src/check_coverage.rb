@@ -19,6 +19,7 @@ begin
   debug_mode = ENV['DEBUG_MODE']
   on_fail_status = (ENV['ON_FAIL_STATUS'] || 'fail').downcase
   post_comment = ENV['POST_COMMENT']
+  update_comment = ENV['UPDATE_COMMENT']
   github_token = ENV['GITHUB_TOKEN']
 
   debug("Environment variables: #{ENV.keys.select { |k| !k.include?('TOKEN') && !k.include?('SECRET') }.join(', ')}", debug_mode)
@@ -51,15 +52,22 @@ begin
     puts "::warning::`post_comment` should be 'true' or 'false', got '#{post_comment}'. Using default (false)."
   end
 
+  # Validate update_comment
+  valid_update_comment_values = ['true', 'TRUE', '1', 'false', 'FALSE', '0', '', nil]
+  unless valid_update_comment_values.include?(update_comment)
+    puts "::warning::`update_comment` should be 'true' or 'false', got '#{update_comment}'. Using default (false)."
+  end
+
   # Check if post_comment is enabled but no token provided
   should_post_comment = ['true', 'TRUE', '1'].include?(post_comment)
+  should_update_comment = ['true', 'TRUE', '1'].include?(update_comment)
   if should_post_comment && github_token.to_s.strip.empty?
     puts "::warning::`post_comment` is enabled but no `github_token` was provided. Comments won't be posted."
     should_post_comment = false
   end
 
   debug("Inputs: minimum_suite_coverage=#{min_suite_coverage}, minimum_file_coverage=#{min_file_coverage}", debug_mode)
-  debug("Options: on_fail_status=#{on_fail_status}, post_comment=#{should_post_comment}", debug_mode)
+  debug("Options: on_fail_status=#{on_fail_status}, post_comment=#{should_post_comment}, update_comment=#{should_update_comment}", debug_mode)
 
   # Check if coverage file exists
   unless File.exist?(coverage_path)
@@ -75,7 +83,7 @@ begin
     puts "::error::SimpleCov results file is empty or invalid"
     exit 1
   end
-
+  
   # Get the most recent result - sort keys to ensure we get the latest
   # This handles both numeric keys and timestamp strings
   result_key = if results.keys.all? { |k| k.to_i.to_s == k }
@@ -246,22 +254,77 @@ begin
           if pr_number && repo
             debug("Posting comment to PR ##{pr_number} in repository #{repo}", debug_mode)
 
-            uri = URI.parse("https://api.github.com/repos/#{repo}/issues/#{pr_number}/comments")
-            request = Net::HTTP::Post.new(uri)
-            request['Accept'] = 'application/vnd.github.v3+json'
-            request['Authorization'] = "token #{github_token}"
-            request['Content-Type'] = 'application/json'
-            request.body = { body: comment_body.join("\n") }.to_json
+            # Find existing comment if update_comment is true
+            existing_comment_id = nil
+            if should_update_comment
+              debug("Looking for existing coverage comment to update", debug_mode)
 
-            response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
-              http.request(request)
+              # Get existing comments
+              comments_uri = URI.parse("https://api.github.com/repos/#{repo}/issues/#{pr_number}/comments")
+              comments_request = Net::HTTP::Get.new(comments_uri)
+              comments_request['Accept'] = 'application/vnd.github.v3+json'
+              comments_request['Authorization'] = "token #{github_token}"
+
+              comments_response = Net::HTTP.start(comments_uri.hostname, comments_uri.port, use_ssl: true) do |http|
+                http.request(comments_request)
+              end
+
+              if comments_response.code.to_i >= 200 && comments_response.code.to_i < 300
+                comments = JSON.parse(comments_response.body)
+
+                # Look for our comment header
+                comments.each do |comment|
+                  if comment['body'] && comment['body'].start_with?('## SimpleCov Coverage Results')
+                    existing_comment_id = comment['id']
+                    debug("Found existing comment ID: #{existing_comment_id}", debug_mode)
+                    break
+                  end
+                end
+              else
+                puts "::warning::Failed to fetch existing comments. Response: #{comments_response.code} #{comments_response.message}"
+                debug("Response body: #{comments_response.body}", debug_mode)
+              end
             end
 
-            if response.code.to_i >= 200 && response.code.to_i < 300
-              puts "::notice::Successfully posted coverage results as a comment on PR ##{pr_number}"
+            # Create or update comment
+            if existing_comment_id && should_update_comment
+              # Update existing comment
+              update_uri = URI.parse("https://api.github.com/repos/#{repo}/issues/comments/#{existing_comment_id}")
+              request = Net::HTTP::Patch.new(update_uri)
+              request['Accept'] = 'application/vnd.github.v3+json'
+              request['Authorization'] = "token #{github_token}"
+              request['Content-Type'] = 'application/json'
+              request.body = { body: comment_body.join("\n") }.to_json
+
+              response = Net::HTTP.start(update_uri.hostname, update_uri.port, use_ssl: true) do |http|
+                http.request(request)
+              end
+
+              if response.code.to_i >= 200 && response.code.to_i < 300
+                puts "::notice::Successfully updated coverage results in existing comment"
+              else
+                puts "::warning::Failed to update comment. Response: #{response.code} #{response.message}"
+                debug("Response body: #{response.body}", debug_mode)
+              end
             else
-              puts "::warning::Failed to post comment to PR. Response: #{response.code} #{response.message}"
-              debug("Response body: #{response.body}", debug_mode)
+              # Create new comment
+              uri = URI.parse("https://api.github.com/repos/#{repo}/issues/#{pr_number}/comments")
+              request = Net::HTTP::Post.new(uri)
+              request['Accept'] = 'application/vnd.github.v3+json'
+              request['Authorization'] = "token #{github_token}"
+              request['Content-Type'] = 'application/json'
+              request.body = { body: comment_body.join("\n") }.to_json
+
+              response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+                http.request(request)
+              end
+
+              if response.code.to_i >= 200 && response.code.to_i < 300
+                puts "::notice::Successfully posted coverage results as a comment on PR ##{pr_number}"
+              else
+                puts "::warning::Failed to post comment to PR. Response: #{response.code} #{response.message}"
+                debug("Response body: #{response.body}", debug_mode)
+              end
             end
           else
             puts "::warning::Could not determine PR number or repository from event data"

@@ -9,7 +9,7 @@ inputs:
   minimum_suite_coverage:
     description: 'Minimum required total coverage percentage (0-100)'
     required: false
-    default: '95'
+    default: '0'
   minimum_file_coverage:
     description: 'Minimum required coverage percentage per file (0-100)'
     required: false
@@ -30,6 +30,10 @@ inputs:
     description: 'Post results as a PR comment (true|false)'
     required: false
     default: 'false'
+  update_comment:
+    description: 'Update existing comment instead of creating a new one (true|false)'
+    required: false
+    default: 'false'
   github_token:
     description: 'GitHub token (required if post_comment is true)'
     required: false
@@ -45,4 +49,5 @@ runs:
     DEBUG_MODE: ${{ inputs.debug_mode }}
     ON_FAIL_STATUS: ${{ inputs.on_fail_status }}
     POST_COMMENT: ${{ inputs.post_comment }}
+    UPDATE_COMMENT: ${{ inputs.update_comment }}
     GITHUB_TOKEN: ${{ inputs.github_token }}
