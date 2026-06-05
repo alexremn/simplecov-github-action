@@ -1,3 +1,5 @@
+# SimpleCov GitHub Action
+
 [![GitHub release](https://img.shields.io/github/v/release/alexremn/simplecov-github-action.svg)](https://github.com/alexremn/simplecov-github-action/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -99,7 +101,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-Without the `pull-requests: write` permission, the action will not be able to post or update comments on pull requests.# SimpleCov GitHub Action
+Without the `pull-requests: write` permission, the action will not be able to post or update comments on pull requests.
 
 ## Examples
 
@@ -295,16 +297,17 @@ The action:
 5. Optionally posts results as a PR comment
 6. Either fails the workflow or just warns, depending on your configuration
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development
+setup, the PR workflow, and conventions. By participating you agree to abide by
+the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md). Please do not file
+public issues for security problems.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request

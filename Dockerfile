@@ -1,6 +1,6 @@
 FROM ruby:3.4-alpine
 
-LABEL maintainer="Aleks Remniov <alexander.remniov@gmail.com>"
+LABEL maintainer="Aleks Remniov <alexander@remniov.com>"
 LABEL org.opencontainers.image.source="https://github.com/alexremn/simplecov-github-action"
 LABEL org.opencontainers.image.description="A GitHub Action to check SimpleCov code coverage"
 LABEL org.opencontainers.image.licenses="MIT"
