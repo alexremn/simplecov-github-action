@@ -1,4 +1,4 @@
-FROM ruby:3.4-alpine
+FROM ruby:4.0-alpine
 
 LABEL maintainer="Aleks Remniov <alexander@remniov.com>"
 LABEL org.opencontainers.image.source="https://github.com/alexremn/simplecov-github-action"
